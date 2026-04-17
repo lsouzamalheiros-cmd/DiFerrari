@@ -2,4 +2,3 @@ streamlit
 pillow
 pymongo
 qrcode
-kivy
