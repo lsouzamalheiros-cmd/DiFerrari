@@ -47,16 +47,16 @@ def criar_etiqueta(sabor, fab_str, val_str, lote):
 
     cor = 0
 
-    # borda arredondada
+    # borda
     draw.rounded_rectangle((5, 5, largura-5, altura-5), outline=cor, width=3, radius=20)
 
-    # linha separadora
-    draw.line((10, 90, largura-10, 90), fill=cor, width=2)
+    # linha
+    draw.line((10, 100, largura-10, 100), fill=cor, width=3)
 
-    # fontes
+    # fontes GRANDES
     try:
-        titulo = ImageFont.truetype("arial.ttf", 28)
-        texto = ImageFont.truetype("arial.ttf", 18)
+        titulo = ImageFont.truetype("arial.ttf", 42)   # antes ~28
+        texto = ImageFont.truetype("arial.ttf", 26)    # antes ~18
     except:
         titulo = ImageFont.load_default()
         texto = ImageFont.load_default()
@@ -64,20 +64,20 @@ def criar_etiqueta(sabor, fab_str, val_str, lote):
     # título
     draw.text((10, 20), "DiFerrari", font=titulo, fill=cor)
 
-    # datas
-    draw.text((10, 110), f"Fab: {fab_str}", font=texto, fill=cor)
-    draw.text((10, 140), f"Val: {val_str}", font=texto, fill=cor)
+    # datas (mais espaçadas)
+    draw.text((10, 115), f"Fab: {fab_str}", font=texto, fill=cor)
+    draw.text((10, 145), f"Val: {val_str}", font=texto, fill=cor)
 
-    # sabor
-    draw.text((10, 170), sabor[:25], font=texto, fill=cor)
+    # sabor (limitado pra não estourar)
+    draw.text((10, 175), sabor[:20], font=texto, fill=cor)
 
-    # QR pequeno
+    # QR menor pra caber
     qr = qrcode.make(lote)
-    qr = qr.resize((80, 80))
-    img.paste(qr, (310, 130))
+    qr = qr.resize((70, 70))
+    img.paste(qr, (320, 130))
 
     return img.convert("1")
-
+    
 # ==========================================
 # LOTE
 # ==========================================
