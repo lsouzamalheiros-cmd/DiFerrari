@@ -40,29 +40,41 @@ SABORES = [
 # ==========================================
 def criar_etiqueta(sabor, fab_str, val_str, lote):
 
-    largura, altura = 384, 384
+    largura, altura = 400, 240  # 50mm x 30mm
+
     img = Image.new("L", (largura, altura), 255)
     draw = ImageDraw.Draw(img)
 
     cor = 0
 
-    draw.ellipse((10, 10, largura-10, altura-10), outline=cor, width=6)
-    draw.line((30, 150, largura-30, 150), fill=cor, width=4)
+    # borda arredondada
+    draw.rounded_rectangle((5, 5, largura-5, altura-5), outline=cor, width=3, radius=20)
 
+    # linha separadora
+    draw.line((10, 90, largura-10, 90), fill=cor, width=2)
+
+    # fontes
     try:
-        titulo = ImageFont.truetype("arial.ttf", 42)
-        texto = ImageFont.truetype("arial.ttf", 22)
+        titulo = ImageFont.truetype("arial.ttf", 28)
+        texto = ImageFont.truetype("arial.ttf", 18)
     except:
         titulo = ImageFont.load_default()
         texto = ImageFont.load_default()
 
-    draw.text((60, 80), "DiFerrari", font=titulo, fill=cor)
-    draw.text((60, 170), f"fab: {fab_str}", font=texto, fill=cor)
-    draw.text((60, 200), f"val: {val_str}", font=texto, fill=cor)
-    draw.text((60, 230), sabor, font=texto, fill=cor)
+    # título
+    draw.text((10, 20), "DiFerrari", font=titulo, fill=cor)
 
-    qr = qrcode.make(lote).resize((80, 80))
-    img.paste(qr, (280, 280))
+    # datas
+    draw.text((10, 110), f"Fab: {fab_str}", font=texto, fill=cor)
+    draw.text((10, 140), f"Val: {val_str}", font=texto, fill=cor)
+
+    # sabor
+    draw.text((10, 170), sabor[:25], font=texto, fill=cor)
+
+    # QR pequeno
+    qr = qrcode.make(lote)
+    qr = qr.resize((80, 80))
+    img.paste(qr, (310, 130))
 
     return img.convert("1")
 
