@@ -1,5 +1,5 @@
 # ==========================================
-# DIFERRARI PRO MAX - SISTEMA COMPLETO
+# DIFERRARI FINAL - ESTÁVEL E PROFISSIONAL
 # ==========================================
 
 import streamlit as st
@@ -8,12 +8,11 @@ from datetime import datetime, timedelta
 from pymongo import MongoClient
 import qrcode
 import io
-import pandas as pd
 
 # ==========================================
 # CONFIG
 # ==========================================
-st.set_page_config(page_title="DiFerrari PRO MAX", layout="wide")
+st.set_page_config(page_title="DiFerrari", layout="centered")
 
 MONGO_URI = "mongodb+srv://lsouzamalheiros_db_user:Malheiros76@cluster0.rch6yzm.mongodb.net/"
 
@@ -22,25 +21,16 @@ db = client["diferrari"]
 colecao = db["etiquetas"]
 
 # ==========================================
-# SABORES FIXOS
+# SABORES
 # ==========================================
-SABORES = [
-    "Brigadeiro",
-    "Beijinho",
-    "Ninho",
-    "Maracujá",
-    "Prestígio",
-    "Limão",
-    "Morango",
-    "Trufa"
-]
+SABORES = ["Brigadeiro", "Beijinho", "Ninho", "Morango", "Maracujá"]
 
 # ==========================================
-# ETIQUETA
+# ETIQUETA 50x30 (FONTE GRANDE)
 # ==========================================
 def criar_etiqueta(sabor, fab_str, val_str, lote):
 
-    largura, altura = 400, 240  # 50mm x 30mm
+    largura, altura = 400, 240
 
     img = Image.new("L", (largura, altura), 255)
     draw = ImageDraw.Draw(img)
@@ -53,10 +43,9 @@ def criar_etiqueta(sabor, fab_str, val_str, lote):
     # linha
     draw.line((10, 100, largura-10, 100), fill=cor, width=3)
 
-    # fontes GRANDES
     try:
-        titulo = ImageFont.truetype("arial.ttf", 42)   # antes ~28
-        texto = ImageFont.truetype("arial.ttf", 26)    # antes ~18
+        titulo = ImageFont.truetype("arial.ttf", 40)
+        texto = ImageFont.truetype("arial.ttf", 24)
     except:
         titulo = ImageFont.load_default()
         texto = ImageFont.load_default()
@@ -64,26 +53,23 @@ def criar_etiqueta(sabor, fab_str, val_str, lote):
     # título
     draw.text((10, 20), "DiFerrari", font=titulo, fill=cor)
 
-    # datas (mais espaçadas)
+    # dados
     draw.text((10, 115), f"Fab: {fab_str}", font=texto, fill=cor)
     draw.text((10, 145), f"Val: {val_str}", font=texto, fill=cor)
-
-    # sabor (limitado pra não estourar)
     draw.text((10, 175), sabor[:20], font=texto, fill=cor)
 
-    # QR menor pra caber
-    qr = qrcode.make(lote)
-    qr = qr.resize((70, 70))
+    # QR pequeno
+    qr = qrcode.make(lote).resize((70, 70))
     img.paste(qr, (320, 130))
 
     return img.convert("1")
-    
+
 # ==========================================
-# LOTE
+# LOTE SEGURO (ANTI TRAVAMENTO)
 # ==========================================
 def gerar_lote_seguro(sabor, quantidade):
 
-    MAX = 10  # limite por imagem
+    MAX = 10  # máximo por imagem
     imagens = []
 
     fab = datetime.now()
@@ -118,34 +104,45 @@ def gerar_lote_seguro(sabor, quantidade):
 
         quantidade -= qtd_atual
 
+    # salva no banco
+    colecao.insert_one({
+        "sabor": sabor,
+        "quantidade": quantidade,
+        "fabricacao": fab_str,
+        "validade": val_str,
+        "lote": lote,
+        "criado_em": datetime.now()
+    })
+
     return imagens
-    
+
 # ==========================================
 # INTERFACE
 # ==========================================
-st.title("🍫 DiFerrari PRO MAX")
+st.title("🍫 DiFerrari Etiquetas")
 
-menu = st.sidebar.selectbox("Menu", ["Produção", "Histórico", "Dashboard"])
+menu = st.sidebar.selectbox("Menu", ["Produção", "Histórico"])
 
 # ==========================================
 # PRODUÇÃO
 # ==========================================
 if menu == "Produção":
 
-    st.subheader("Produção Rápida")
+    st.subheader("Gerar Etiquetas")
 
     col1, col2 = st.columns(2)
 
+    sabor = None
+
     with col1:
-        st.write("### Sabores rápidos")
-        sabor = None
+        st.write("Sabores rápidos")
         for s in SABORES:
             if st.button(s):
                 sabor = s
 
     with col2:
-        sabor_manual = st.text_input("Ou digite outro sabor")
-        quantidade = st.number_input("Quantidade", 1, 200, 20)
+        sabor_manual = st.text_input("Outro sabor")
+        quantidade = st.number_input("Quantidade", 1, 100, 20)
 
     if sabor_manual:
         sabor = sabor_manual
@@ -153,22 +150,23 @@ if menu == "Produção":
     if st.button("🚀 GERAR ETIQUETAS"):
 
         if not sabor:
-            st.warning("Escolha ou digite um sabor")
+            st.warning("Escolha um sabor")
         else:
-            imagem, lote = gerar_lote(sabor, quantidade)
+            imagens = gerar_lote_seguro(sabor, quantidade)
 
-            st.success(f"Lote: {lote}")
+            st.success("Etiquetas prontas!")
 
-            st.image(imagem)
+            for i, img in enumerate(imagens):
+                st.image(img, caption=f"Parte {i+1}")
 
-            st.download_button(
-                "📥 Baixar para impressão",
-                data=imagem,
-                file_name="etiquetas.png",
-                mime="image/png"
-            )
+                st.download_button(
+                    f"📥 Baixar parte {i+1}",
+                    data=img,
+                    file_name=f"etiquetas_{i+1}.png",
+                    mime="image/png"
+                )
 
-            st.info("Abra no RawBT e imprima")
+            st.info("Abra cada imagem no RawBT e imprima")
 
 # ==========================================
 # HISTÓRICO
@@ -177,32 +175,12 @@ elif menu == "Histórico":
 
     st.subheader("Histórico")
 
-    dados = list(colecao.find().sort("criado_em", -1).limit(50))
+    dados = list(colecao.find().sort("criado_em", -1).limit(20))
 
     for d in dados:
         st.write(
-            f"{d.get('sabor')} | Qtd: {d.get('quantidade',1)} | "
-            f"Fab: {d.get('fabricacao')} | Lote: {d.get('lote')}"
+            f"{d.get('sabor','-')} | "
+            f"Qtd: {d.get('quantidade',1)} | "
+            f"Fab: {d.get('fabricacao','-')} | "
+            f"Val: {d.get('validade','-')}"
         )
-
-# ==========================================
-# DASHBOARD
-# ==========================================
-elif menu == "Dashboard":
-
-    st.subheader("Produção diária")
-
-    dados = list(colecao.find())
-
-    if dados:
-
-        df = pd.DataFrame(dados)
-        df['data'] = pd.to_datetime(df['criado_em']).dt.date
-
-        resumo = df.groupby('data')['quantidade'].sum()
-
-        st.line_chart(resumo)
-
-        st.metric("Produção hoje", int(resumo.iloc[-1]))
-    else:
-        st.info("Sem dados ainda")
