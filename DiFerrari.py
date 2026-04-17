@@ -81,7 +81,10 @@ def criar_etiqueta(sabor, fab_str, val_str, lote):
 # ==========================================
 # LOTE
 # ==========================================
-def gerar_lote(sabor, quantidade):
+def gerar_lote_seguro(sabor, quantidade):
+
+    MAX = 10  # limite por imagem
+    imagens = []
 
     fab = datetime.now()
     val = fab + timedelta(days=7)
@@ -91,34 +94,32 @@ def gerar_lote(sabor, quantidade):
 
     lote = f"{sabor}-{fab.strftime('%Y%m%d%H%M%S')}"
 
-    largura = 384
-    altura_total = 384 * quantidade
+    while quantidade > 0:
 
-    img_final = Image.new("L", (largura, altura_total), 255)
+        qtd_atual = min(MAX, quantidade)
 
-    y = 0
-    for _ in range(quantidade):
-        etiqueta = criar_etiqueta(sabor, fab_str, val_str, lote)
-        img_final.paste(etiqueta, (0, y))
-        y += 384
+        largura = 400
+        altura_unit = 240
+        altura_total = altura_unit * qtd_atual
 
-    img_final = img_final.convert("1")
+        img_final = Image.new("L", (largura, altura_total), 255)
 
-    colecao.insert_one({
-        "sabor": sabor,
-        "quantidade": quantidade,
-        "fabricacao": fab_str,
-        "validade": val_str,
-        "lote": lote,
-        "criado_em": datetime.now()
-    })
+        y = 0
+        for _ in range(qtd_atual):
+            etiqueta = criar_etiqueta(sabor, fab_str, val_str, lote)
+            img_final.paste(etiqueta, (0, y))
+            y += altura_unit
 
-    buffer = io.BytesIO()
-    img_final.save(buffer, format="PNG")
-    buffer.seek(0)
+        buffer = io.BytesIO()
+        img_final.save(buffer, format="PNG")
+        buffer.seek(0)
 
-    return buffer, lote
+        imagens.append(buffer.getvalue())
 
+        quantidade -= qtd_atual
+
+    return imagens
+    
 # ==========================================
 # INTERFACE
 # ==========================================
